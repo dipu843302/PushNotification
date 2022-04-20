@@ -44,6 +44,10 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
     implementation platform('com.google.firebase:firebase-bom:29.3.1')
     implementation 'com.google.firebase:firebase-analytics-ktx'
+
+    //for circle image
+    implementation 'de.hdodenhof:circleimageview:3.1.0'
+
 }
 apply plugin: 'com.android.application'
 apply plugin: 'com.google.gms.google-services'

@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.os.Build
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
@@ -28,15 +29,14 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
            generateNotification(remoteMessage.notification!!.title!!,remoteMessage.notification!!.body!!)
        }
     }
-
-    fun getRemoteView(title: String, message: String): RemoteViews {
+    fun  getRemoteView(title: String, message: String): RemoteViews {
         val remoteViews = RemoteViews("com.example.pushnotification", R.layout.notification)
         remoteViews.setTextViewText(R.id.tittle, title)
         remoteViews.setTextViewText(R.id.message, message)
         remoteViews.setImageViewResource(R.id.app_logo, R.drawable.app_icon)
+
         return remoteViews
     }
-
     // navigate to activity
     fun generateNotification(tittle: String, message: String) {
         val intent = Intent(this, MainActivity::class.java)
@@ -44,13 +44,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                                                                      // after clicking the notification , it will be destroy
         val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_ONE_SHOT)
 
-
         // channel id, channel name
         var builder: NotificationCompat.Builder =
             NotificationCompat.Builder(applicationContext, channelID)
                 .setSmallIcon(R.drawable.app_icon)
                 .setAutoCancel(true)
                 .setOnlyAlertOnce(true)
+                .setGroup(channelName)
                 .setContentIntent(pendingIntent)
 
         builder = builder.setContent(getRemoteView(tittle, message))
@@ -59,11 +59,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.O){
             val notificationChannel=NotificationChannel(channelID, channelName,NotificationManager.IMPORTANCE_HIGH)
             notificationManager.createNotificationChannel(notificationChannel)
-
         }
         notificationManager.notify(0,builder.build())
     }
 
 }
+
 // image url
 // https://freeiconshop.com/wp-content/uploads/edd/notification-flat.png

@@ -1,6 +1,8 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
+    id 'kotlin-android-extensions'
+    id 'kotlin-kapt'
 }
 
 android {
@@ -45,8 +47,14 @@ dependencies {
     implementation platform('com.google.firebase:firebase-bom:29.3.1')
     implementation 'com.google.firebase:firebase-analytics-ktx'
 
-    //for circle image
-    implementation 'de.hdodenhof:circleimageview:3.1.0'
+
+    //Mockk.io
+    testImplementation "io.mockk:mockk:1.10.5"
+    testImplementation "com.google.truth:truth:1.1.3"
+    testImplementation "androidx.arch.core:core-testing:2.1.0"
+
+
+    androidTestImplementation "com.google.truth:truth:1.1.3"
 
 }
 apply plugin: 'com.android.application'

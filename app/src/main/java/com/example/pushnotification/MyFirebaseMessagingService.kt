@@ -1,69 +1,151 @@
 package com.example.pushnotification
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
+import android.annotation.SuppressLint
+import android.app.*
 import android.content.Context
 import android.content.Intent
-import android.graphics.BitmapFactory
 import android.os.Build
+import android.util.Log
 import android.widget.RemoteViews
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
+
 const val channelID = "notification_channel"
 const val channelName = "com.example.pushnotification"
-
-                                    // To receive the messages, use a service that extends FirebaseMessagingService
 class MyFirebaseMessagingService : FirebaseMessagingService() {
 
-    //generate the notification
-    // attach the notification created with custom layout
-    // show the notification
+    override fun onMessageReceived(message: RemoteMessage) {
+        super.onMessageReceived(message)
+        val title = message.data["title"]
+        val body = message.data["body"]
+        val image = message.data["image"]
 
-    // when the  app is in the background. In this case, the notification is delivered to the device’s system tray
-    // A user tap on a notification opens the app launcher by default.
-    override fun onMessageReceived(remoteMessage: RemoteMessage) {
-       if (remoteMessage.notification!=null){
-           generateNotification(remoteMessage.notification!!.title!!,remoteMessage.notification!!.body!!)
-       }
-    }
-    fun  getRemoteView(title: String, message: String): RemoteViews {
-        val remoteViews = RemoteViews("com.example.pushnotification", R.layout.notification)
-        remoteViews.setTextViewText(R.id.tittle, title)
-        remoteViews.setTextViewText(R.id.message, message)
-        remoteViews.setImageViewResource(R.id.app_logo, R.drawable.app_icon)
-
-        return remoteViews
-    }
-    // navigate to activity
-    fun generateNotification(tittle: String, message: String) {
-        val intent = Intent(this, MainActivity::class.java)
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                                                                     // after clicking the notification , it will be destroy
-        val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_ONE_SHOT)
-
-        // channel id, channel name
-        var builder: NotificationCompat.Builder =
-            NotificationCompat.Builder(applicationContext, channelID)
-                .setSmallIcon(R.drawable.app_icon)
-                .setAutoCancel(true)
-                .setOnlyAlertOnce(true)
-                .setGroup(channelName)
-                .setContentIntent(pendingIntent)
-
-        builder = builder.setContent(getRemoteView(tittle, message))
-       val notificationManager=getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.O){
-            val notificationChannel=NotificationChannel(channelID, channelName,NotificationManager.IMPORTANCE_HIGH)
-            notificationManager.createNotificationChannel(notificationChannel)
+        if (isAppOnForeground()) {
+            Log.d("TAG", "onMessageReceived: onForGround $title $body $image")
+            val intent = Intent("com.example.pushnotification_FCM-MESSAGE")
+            intent.putExtra("title", title)
+            intent.putExtra("body", body)
+            intent.putExtra("image", image)
+            LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)
+        } else {
+            showNotification(title, body, image)
         }
-        notificationManager.notify(0,builder.build())
     }
 
+    private fun showNotification(title: String?, body: String?, image: String?) {
+      //  Log.e("TAG", "showNotification: $title $body $image")
+
+    }
+
+    /**Check if the application is in foreground or not*/
+    private fun isAppOnForeground(): Boolean {
+        return ProcessLifecycleOwner.get().lifecycle.currentState
+            .isAtLeast(Lifecycle.State.STARTED)
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//    override fun onMessageReceived(remoteMessage: RemoteMessage) {
+//        Log.d("dipu","itCalled")
+//        if (remoteMessage.data.isNotEmpty()){
+//            Log.d("dipu","itCalled2")
+//
+//            val title= remoteMessage.data["title"]
+//            val message= remoteMessage.data["message"]
+//
+//          val intent=Intent("com.example.pushnotification_FCM-MESSAGE")
+//          intent.putExtra("title",title)
+//          intent.putExtra("message",message)
+//          Log.d("dipu",title.toString())
+//            val localBroadcastManager=LocalBroadcastManager.getInstance(this)
+//            localBroadcastManager.sendBroadcast(intent)
+//        }
+//    }
+
+
+
+//    @RequiresApi(Build.VERSION_CODES.O)
+//    override fun onMessageReceived(remoteMessage: RemoteMessage) {
+//        Log.d("message", "xyz")
+//        if (remoteMessage.notification != null) {
+//            val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+//            if (!isAppInForeground(activityManager)) {
+//               // generateNotification(
+//                    remoteMessage.notification!!.title!!
+//                    remoteMessage.notification!!.body!!
+//              //  )
+//            }
+//        }
+//    }
+//
+//    // navigate to activity
+//    @RequiresApi(Build.VERSION_CODES.O)
+//    @SuppressLint("UnspecifiedImmutableFlag")
+//    fun generateNotification(tittle: String, message: String) {
+//
+//        val intent = Intent(this, MainActivity::class.java)
+//        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+//        // after clicking the notification , it will be destroy
+//        val pendingIntent =
+//            PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+//
+//        // channel id, channel name
+//        var builder: NotificationCompat.Builder =
+//            NotificationCompat.Builder(applicationContext, channelID)
+//                .setSmallIcon(R.drawable.app_icon)
+//                .setAutoCancel(true)
+//                .setOnlyAlertOnce(true)
+//                .setGroup(channelName)
+//                .setContentIntent(pendingIntent)
+//                .setStyle(NotificationCompat.InboxStyle()
+//                    .addLine("title2"+" "+"message2")
+//                    .addLine("title1"+" "+"message1")
+//                    .setBigContentTitle("2 new messages")
+//                    .setSummaryText("user@gmail.com"))
+//                .setGroupSummary(true)
+//
+//            val notificationManager =
+//                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+//
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//                val notificationChannel =
+//                    NotificationChannel(channelID, channelName, NotificationManager.IMPORTANCE_HIGH)
+//                notificationManager.createNotificationChannel(notificationChannel)
+//            }
+//            notificationManager.notify(0, builder.build())
+//        }
+//
+//        fun isAppInForeground(activityManager: ActivityManager): Boolean {
+//            val appProcesses = activityManager.runningAppProcesses ?: return false
+//            for (appProcess in appProcesses) {
+//                if (appProcess.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND && appProcess.processName == packageName) {
+//                    return true
+//                }
+//            }
+//            return false
+//        }
+
 
 // image url
 // https://freeiconshop.com/wp-content/uploads/edd/notification-flat.png

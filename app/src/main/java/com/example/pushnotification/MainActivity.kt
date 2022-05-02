@@ -19,49 +19,41 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        LocalBroadcastManager.getInstance(this).registerReceiver(receiver, IntentFilter("com.example.pushnotification_FCM-MESSAGE"))
+        val intent = intent
+        val messageData = intent.getParcelableExtra<MessageData>("message")
 
+        if (messageData != null) {
+            tvTitle.text = messageData.title
+            tvBody.text = messageData.body
+            Glide.with(imageView).load(messageData.image).into(imageView)
+        }
+
+        LocalBroadcastManager.getInstance(this)
+            .registerReceiver(receiver, IntentFilter("com.example.pushnotification_FCM-MESSAGE"))
     }
 
     override fun onDestroy() {
         super.onDestroy()
-      unregisterReceiver(receiver)
+        unregisterReceiver(receiver)
     }
 
     private val receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action != null && intent.action == "com.example.pushnotification_FCM-MESSAGE") {
 
-                val title = intent.getStringExtra("title")
-                val message = intent.getStringExtra("body")
-                val image = intent.getStringExtra("image")
-                tvTitle.text = title
-                tvBody.text = message
-                Glide.with(imageView).load(image).into(imageView)
+                val messageData = intent.getParcelableExtra<MessageData>("message")
 
-                Log.d(TAG, message.toString())
-                Log.d(TAG, title.toString())
+                if (messageData != null) {
+                    tvTitle.text = messageData.title
+                    tvBody.text = messageData.body
+                    Glide.with(imageView).load(messageData.image).into(imageView)
+                }
+
+
             }
         }
     }
 }
-
-
-
-
-/*
-for(String key: getIntent().getExtras().keySet()){
-
-}
-
-private BroadcastReceiver mHandler=new BroadcastReceiver(){
-@override
-public void onReceive(Context context , Intent intent){
-}
-}
-
-
- */
 
 
 //FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->

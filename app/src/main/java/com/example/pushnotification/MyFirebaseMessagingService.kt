@@ -18,6 +18,7 @@ import com.google.firebase.messaging.RemoteMessage
 
 const val channelID = "notification_channel"
 const val channelName = "com.example.pushnotification"
+
 class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
@@ -29,41 +30,53 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         if (isAppOnForeground()) {
             Log.d("TAG", "onMessageReceived: onForGround $title $body $image")
             val intent = Intent("com.example.pushnotification_FCM-MESSAGE")
-            intent.putExtra("title", title)
-            intent.putExtra("body", body)
-            intent.putExtra("image", image)
+
+            val messageData = MessageData(title.toString(), body.toString(), image.toString())
+            intent.putExtra("message", messageData)
             LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)
         } else {
             showNotification(title, body, image)
         }
     }
 
+    @SuppressLint("UnspecifiedImmutableFlag")
     private fun showNotification(title: String?, body: String?, image: String?) {
-      //  Log.e("TAG", "showNotification: $title $body $image")
+        Log.d("show", "$title $body $image")
 
+        val intent = Intent(this, MainActivity::class.java)
+
+        val messageData = MessageData(title.toString(), body.toString(), image.toString())
+        intent.putExtra("message", messageData)
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+
+        val pendingIntent =
+            PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+
+        var builder: NotificationCompat.Builder =
+            NotificationCompat.Builder(applicationContext, channelID)
+                .setSmallIcon(R.drawable.app_icon)
+                .setAutoCancel(true)
+                .setOnlyAlertOnce(true)
+                .setGroup(channelName)
+                .setContentIntent(pendingIntent)
+
+        val notificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notificationChannel =
+                NotificationChannel(channelID, channelName, NotificationManager.IMPORTANCE_HIGH)
+            notificationManager.createNotificationChannel(notificationChannel)
+        }
+        notificationManager.notify(0, builder.build())
     }
 
-    /**Check if the application is in foreground or not*/
+    /*Check if the application is in foreground or not*/
     private fun isAppOnForeground(): Boolean {
         return ProcessLifecycleOwner.get().lifecycle.currentState
             .isAtLeast(Lifecycle.State.STARTED)
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 //    override fun onMessageReceived(remoteMessage: RemoteMessage) {
@@ -82,7 +95,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 //            localBroadcastManager.sendBroadcast(intent)
 //        }
 //    }
-
 
 
 //    @RequiresApi(Build.VERSION_CODES.O)

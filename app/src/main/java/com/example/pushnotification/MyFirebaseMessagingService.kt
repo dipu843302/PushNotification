@@ -6,8 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.util.Log
-import android.widget.RemoteViews
-import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -21,36 +19,37 @@ const val channelName = "com.example.pushnotification"
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
 
+
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-        val title = message.data["title"]
-        val body = message.data["body"]
-        val image = message.data["image"]
+
+        var messageData = MessageData(
+            message.data["title"]!!,
+            message.data["body"]!!,
+            message.data["image"]!!
+        )
 
         if (isAppOnForeground()) {
-            Log.d("TAG", "onMessageReceived: onForGround $title $body $image")
+            showNotification(messageData)
             val intent = Intent("com.example.pushnotification_FCM-MESSAGE")
 
-            val messageData = MessageData(title.toString(), body.toString(), image.toString())
             intent.putExtra("message", messageData)
             LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)
         } else {
-            showNotification(title, body, image)
+            showNotification(messageData)
         }
     }
 
     @SuppressLint("UnspecifiedImmutableFlag")
-    private fun showNotification(title: String?, body: String?, image: String?) {
-        Log.d("show", "$title $body $image")
-
+    private fun showNotification(messageData: MessageData) {
         val intent = Intent(this, MainActivity::class.java)
 
-        val messageData = MessageData(title.toString(), body.toString(), image.toString())
         intent.putExtra("message", messageData)
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
 
         val pendingIntent =
             PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+        Log.d("show", "${messageData.body} ${messageData.title}")
 
         var builder: NotificationCompat.Builder =
             NotificationCompat.Builder(applicationContext, channelID)
@@ -69,6 +68,14 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             notificationManager.createNotificationChannel(notificationChannel)
         }
         notificationManager.notify(0, builder.build())
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            notificationManager.activeNotifications.forEach { sbNotification ->
+                if (sbNotification.id==0){
+                  Log.d("dipu",  sbNotification.notification.extras.getString("android.text")!!)
+
+                }
+            }
+        }
     }
 
     /*Check if the application is in foreground or not*/

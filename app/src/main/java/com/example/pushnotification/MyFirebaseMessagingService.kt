@@ -33,11 +33,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             message.data["image"] ?: "",
             message.data["id"]!!.toInt()
         )
-        Log.d("id", " ${message.data["id"]!!.toInt()}")
-        val shrd :SharedPreferences=getSharedPreferences("Message", MODE_PRIVATE)
-       val editor: SharedPreferences.Editor =shrd.edit()
-
-        editor.putString("title",messageData.title)
 
         if (isAppOnForeground()) {
             val intent = Intent("com.example.pushnotification_FCM-MESSAGE")

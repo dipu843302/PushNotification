@@ -1,18 +1,24 @@
 package com.example.pushnotification
 
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
+import android.app.Notification
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.*
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.bumptech.glide.Glide
 import kotlinx.android.synthetic.main.activity_main.*
 
 
 class MainActivity : AppCompatActivity() {
+
+
 
     var TAG = "dipu"
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,6 +60,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 }
+
+
+
+
 
 
 //FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->

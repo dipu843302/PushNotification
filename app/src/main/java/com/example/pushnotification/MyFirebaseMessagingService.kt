@@ -4,9 +4,11 @@ import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -19,6 +21,8 @@ const val channelName = "com.example.pushnotification"
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
 
+    val arrayList = ArrayList<MessageData>()
+    var value = 0
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
@@ -26,11 +30,16 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         var messageData = MessageData(
             message.data["title"]!!,
             message.data["body"]!!,
-            message.data["image"]!!
+            message.data["image"] ?: "",
+            message.data["id"]!!.toInt()
         )
+        Log.d("id", " ${message.data["id"]!!.toInt()}")
+        val shrd :SharedPreferences=getSharedPreferences("Message", MODE_PRIVATE)
+       val editor: SharedPreferences.Editor =shrd.edit()
+
+        editor.putString("title",messageData.title)
 
         if (isAppOnForeground()) {
-            showNotification(messageData)
             val intent = Intent("com.example.pushnotification_FCM-MESSAGE")
 
             intent.putExtra("message", messageData)
@@ -42,6 +51,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     @SuppressLint("UnspecifiedImmutableFlag")
     private fun showNotification(messageData: MessageData) {
+
         val intent = Intent(this, MainActivity::class.java)
 
         intent.putExtra("message", messageData)
@@ -51,12 +61,34 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
         Log.d("show", "${messageData.body} ${messageData.title}")
 
+        val newMessageNotification1 = NotificationCompat.Builder(applicationContext, channelID)
+            .setSmallIcon(R.drawable.app_icon)
+            .setContentTitle(messageData.title)
+            .setContentText(messageData.body)
+            .setGroup(channelName)
+            .build()
+
+        val newMessageNotification2 = NotificationCompat.Builder(applicationContext, channelID)
+            .setSmallIcon(R.drawable.app_icon)
+            .setContentTitle(messageData.title)
+            .setContentText(messageData.body)
+            .setGroup(channelName)
+            .build()
+
         var builder: NotificationCompat.Builder =
             NotificationCompat.Builder(applicationContext, channelID)
                 .setSmallIcon(R.drawable.app_icon)
                 .setAutoCancel(true)
                 .setOnlyAlertOnce(true)
                 .setGroup(channelName)
+                .setContentText("Two new messages")
+                .setStyle(
+                    NotificationCompat.InboxStyle()
+                        .addLine(messageData.title).addLine(messageData.body)
+                        .setBigContentTitle("Tittle")
+                        .setSummaryText("You have " + arrayList.size + " Notifications.")
+                )
+                .setGroupSummary(true)
                 .setContentIntent(pendingIntent)
 
         val notificationManager =
@@ -67,16 +99,23 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 NotificationChannel(channelID, channelName, NotificationManager.IMPORTANCE_HIGH)
             notificationManager.createNotificationChannel(notificationChannel)
         }
-        notificationManager.notify(0, builder.build())
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            notificationManager.activeNotifications.forEach { sbNotification ->
-                if (sbNotification.id==0){
-                  Log.d("dipu",  sbNotification.notification.extras.getString("android.text")!!)
-
-                }
-            }
+      //  notificationManager.notify(0, builder.build())
+        NotificationManagerCompat.from(this).apply {
+            notify(1, newMessageNotification1)
+            notify(2, newMessageNotification2)
+            notify(0, builder.build())
         }
+//
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+//            notificationManager.activeNotifications.forEach { sbNotification ->
+//                if (sbNotification.id == 0) {
+//                    Log.d("dipu", sbNotification.notification.extras.getString("android.text")!!)
+//
+//                }
+//            }
+//        }
     }
+
 
     /*Check if the application is in foreground or not*/
     private fun isAppOnForeground(): Boolean {
@@ -84,86 +123,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             .isAtLeast(Lifecycle.State.STARTED)
     }
 }
-
-
-//    override fun onMessageReceived(remoteMessage: RemoteMessage) {
-//        Log.d("dipu","itCalled")
-//        if (remoteMessage.data.isNotEmpty()){
-//            Log.d("dipu","itCalled2")
-//
-//            val title= remoteMessage.data["title"]
-//            val message= remoteMessage.data["message"]
-//
-//          val intent=Intent("com.example.pushnotification_FCM-MESSAGE")
-//          intent.putExtra("title",title)
-//          intent.putExtra("message",message)
-//          Log.d("dipu",title.toString())
-//            val localBroadcastManager=LocalBroadcastManager.getInstance(this)
-//            localBroadcastManager.sendBroadcast(intent)
-//        }
-//    }
-
-
-//    @RequiresApi(Build.VERSION_CODES.O)
-//    override fun onMessageReceived(remoteMessage: RemoteMessage) {
-//        Log.d("message", "xyz")
-//        if (remoteMessage.notification != null) {
-//            val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-//            if (!isAppInForeground(activityManager)) {
-//               // generateNotification(
-//                    remoteMessage.notification!!.title!!
-//                    remoteMessage.notification!!.body!!
-//              //  )
-//            }
-//        }
-//    }
-//
-//    // navigate to activity
-//    @RequiresApi(Build.VERSION_CODES.O)
-//    @SuppressLint("UnspecifiedImmutableFlag")
-//    fun generateNotification(tittle: String, message: String) {
-//
-//        val intent = Intent(this, MainActivity::class.java)
-//        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-//        // after clicking the notification , it will be destroy
-//        val pendingIntent =
-//            PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
-//
-//        // channel id, channel name
-//        var builder: NotificationCompat.Builder =
-//            NotificationCompat.Builder(applicationContext, channelID)
-//                .setSmallIcon(R.drawable.app_icon)
-//                .setAutoCancel(true)
-//                .setOnlyAlertOnce(true)
-//                .setGroup(channelName)
-//                .setContentIntent(pendingIntent)
-//                .setStyle(NotificationCompat.InboxStyle()
-//                    .addLine("title2"+" "+"message2")
-//                    .addLine("title1"+" "+"message1")
-//                    .setBigContentTitle("2 new messages")
-//                    .setSummaryText("user@gmail.com"))
-//                .setGroupSummary(true)
-//
-//            val notificationManager =
-//                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-//
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//                val notificationChannel =
-//                    NotificationChannel(channelID, channelName, NotificationManager.IMPORTANCE_HIGH)
-//                notificationManager.createNotificationChannel(notificationChannel)
-//            }
-//            notificationManager.notify(0, builder.build())
-//        }
-//
-//        fun isAppInForeground(activityManager: ActivityManager): Boolean {
-//            val appProcesses = activityManager.runningAppProcesses ?: return false
-//            for (appProcess in appProcesses) {
-//                if (appProcess.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND && appProcess.processName == packageName) {
-//                    return true
-//                }
-//            }
-//            return false
-//        }
 
 
 // image url

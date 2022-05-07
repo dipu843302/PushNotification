@@ -17,9 +17,6 @@ import kotlinx.android.synthetic.main.activity_main.*
 
 
 class MainActivity : AppCompatActivity() {
-
-
-
     var TAG = "dipu"
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,8 +35,8 @@ class MainActivity : AppCompatActivity() {
             .registerReceiver(receiver, IntentFilter("com.example.pushnotification_FCM-MESSAGE"))
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
+    override fun onPause() {
+        super.onPause()
         unregisterReceiver(receiver)
     }
 
@@ -54,8 +51,6 @@ class MainActivity : AppCompatActivity() {
                     tvBody.text = messageData.body
                     Glide.with(imageView).load(messageData.image).into(imageView)
                 }
-
-
             }
         }
     }

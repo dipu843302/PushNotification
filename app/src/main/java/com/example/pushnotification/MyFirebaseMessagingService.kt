@@ -4,11 +4,9 @@ import android.annotation.SuppressLint
 import android.app.*
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -23,6 +21,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     val arrayList = ArrayList<MessageData>()
     var value = 0
+//    val shrd = getSharedPreferences("Message", MODE_PRIVATE)
+    //  val editor: SharedPreferences.Editor=shrd.edit()
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
@@ -33,6 +33,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             message.data["image"] ?: "",
             message.data["id"]!!.toInt()
         )
+
+//        editor.putInt("id", message.data["id"]!!.toInt())
+//        editor.putString("title",  message.data["title"])
+//        editor.putString("body", message.data["body"])
+//        editor.putString("image", message.data["image"])
+//        editor.apply()
+
 
         if (isAppOnForeground()) {
             val intent = Intent("com.example.pushnotification_FCM-MESSAGE")
@@ -56,19 +63,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
         Log.d("show", "${messageData.body} ${messageData.title}")
 
-        val newMessageNotification1 = NotificationCompat.Builder(applicationContext, channelID)
-            .setSmallIcon(R.drawable.app_icon)
-            .setContentTitle(messageData.title)
-            .setContentText(messageData.body)
-            .setGroup(channelName)
-            .build()
-
-        val newMessageNotification2 = NotificationCompat.Builder(applicationContext, channelID)
-            .setSmallIcon(R.drawable.app_icon)
-            .setContentTitle(messageData.title)
-            .setContentText(messageData.body)
-            .setGroup(channelName)
-            .build()
+        arrayList.add(messageData)
+      //  if (arrayList.size>1) if (arrayList.contains(messageData))
 
         var builder: NotificationCompat.Builder =
             NotificationCompat.Builder(applicationContext, channelID)
@@ -79,8 +75,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 .setContentText("Two new messages")
                 .setStyle(
                     NotificationCompat.InboxStyle()
-                        .addLine(messageData.title).addLine(messageData.body)
-                        .setBigContentTitle("Tittle")
+                        .addLine(messageData.body)
+                        .setBigContentTitle(messageData.title)
                         .setSummaryText("You have " + arrayList.size + " Notifications.")
                 )
                 .setGroupSummary(true)
@@ -94,12 +90,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 NotificationChannel(channelID, channelName, NotificationManager.IMPORTANCE_HIGH)
             notificationManager.createNotificationChannel(notificationChannel)
         }
-      //  notificationManager.notify(0, builder.build())
-        NotificationManagerCompat.from(this).apply {
-            notify(1, newMessageNotification1)
-            notify(2, newMessageNotification2)
-            notify(0, builder.build())
-        }
+        notificationManager.notify(messageData.id, builder.build())
+
 //
 //        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
 //            notificationManager.activeNotifications.forEach { sbNotification ->
@@ -110,7 +102,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 //            }
 //        }
     }
-
 
     /*Check if the application is in foreground or not*/
     private fun isAppOnForeground(): Boolean {

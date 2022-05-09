@@ -9,10 +9,13 @@ import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.bumptech.glide.Glide
+import com.google.android.gms.tasks.OnCompleteListener
+import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.android.synthetic.main.activity_main.*
 
 
@@ -33,10 +36,26 @@ class MainActivity : AppCompatActivity() {
 
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(receiver, IntentFilter("com.example.pushnotification_FCM-MESSAGE"))
+
+
+
+        FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                Log.w(TAG, "Fetching FCM registration token failed", task.exception)
+                return@OnCompleteListener
+            }
+
+            //      Get new FCM registration token
+            val token = task.result
+            textView.setText(token)
+
+            Log.d(TAG, token.toString())
+            Toast.makeText(baseContext, token, Toast.LENGTH_SHORT).show()
+        })
     }
 
-    override fun onPause() {
-        super.onPause()
+    override fun onDestroy() {
+        super.onDestroy()
         unregisterReceiver(receiver)
     }
 
@@ -60,18 +79,4 @@ class MainActivity : AppCompatActivity() {
 
 
 
-
-//FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
-//    if (!task.isSuccessful) {
-//        Log.w(TAG, "Fetching FCM registration token failed", task.exception)
-//        return@OnCompleteListener
-//    }
-//
-//    //      Get new FCM registration token
-//    val token = task.result
-//    textView.setText(token)
-//
-//    Log.d(TAG, token.toString())
-//    Toast.makeText(baseContext, token, Toast.LENGTH_SHORT).show()
-//})
 

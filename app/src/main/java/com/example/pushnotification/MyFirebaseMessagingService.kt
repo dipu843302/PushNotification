@@ -1,17 +1,25 @@
 package com.example.pushnotification
 
 import android.annotation.SuppressLint
-import android.app.*
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 
 const val channelID = "notification_channel"
@@ -21,8 +29,14 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     val arrayList = ArrayList<MessageData>()
     var value = 0
-//    val shrd = getSharedPreferences("Message", MODE_PRIVATE)
-    //  val editor: SharedPreferences.Editor=shrd.edit()
+
+    var messageList = ArrayList<MessageData>()
+
+    var hashMap = HashMap<Int, ArrayList<MessageData>>()
+
+
+    val shrd = getSharedPreferences("Message", MODE_PRIVATE)
+    val editor: SharedPreferences.Editor = shrd.edit()
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
@@ -34,25 +48,39 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             message.data["id"]!!.toInt()
         )
 
-//        editor.putInt("id", message.data["id"]!!.toInt())
-//        editor.putString("title",  message.data["title"])
-//        editor.putString("body", message.data["body"])
-//        editor.putString("image", message.data["image"])
-//        editor.apply()
-
-
         if (isAppOnForeground()) {
             val intent = Intent("com.example.pushnotification_FCM-MESSAGE")
 
             intent.putExtra("message", messageData)
             LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)
         } else {
+
             showNotification(messageData)
         }
     }
 
     @SuppressLint("UnspecifiedImmutableFlag")
     private fun showNotification(messageData: MessageData) {
+
+//        if (hashMap.containsKey(messageData.id)) {
+//
+//            messageList.add(messageData.body)
+//            hashMap.put(messageData.id,messageList)
+//
+//        } else {
+//
+//            messageList.add(messageData.body)
+//            hashMap.put(messageData.id,messageList)
+//        }
+
+        messageList.add(messageData)
+        hashMap.put(messageData.id,messageList)
+
+         editor.putString("notificationKey",ObjectMapper().writeValueAsString(hashMap))
+         editor.apply()
+
+        var hasmapString=shrd.getString("notificationKey","")
+     //   var notificationHasmap:HashMap<Int, ArrayList<MessageData>>=ObjectMapper().readValue(hasmapString, object : TypeReference<HashMap<Int, ArrayList<MessageData>>>() {})
 
         val intent = Intent(this, MainActivity::class.java)
 
@@ -64,18 +92,19 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         Log.d("show", "${messageData.body} ${messageData.title}")
 
         arrayList.add(messageData)
-      //  if (arrayList.size>1) if (arrayList.contains(messageData))
 
         var builder: NotificationCompat.Builder =
             NotificationCompat.Builder(applicationContext, channelID)
                 .setSmallIcon(R.drawable.app_icon)
                 .setAutoCancel(true)
                 .setOnlyAlertOnce(true)
-                .setGroup(channelName)
-                .setContentText("Two new messages")
+                .setGroup(messageData.id.toString())
+                .setContentText("${arrayList.size} new messages")
                 .setStyle(
                     NotificationCompat.InboxStyle()
+
                         .addLine(messageData.body)
+
                         .setBigContentTitle(messageData.title)
                         .setSummaryText("You have " + arrayList.size + " Notifications.")
                 )
@@ -101,6 +130,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 //                }
 //            }
 //        }
+
     }
 
     /*Check if the application is in foreground or not*/
@@ -108,6 +138,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         return ProcessLifecycleOwner.get().lifecycle.currentState
             .isAtLeast(Lifecycle.State.STARTED)
     }
+
 }
 
 

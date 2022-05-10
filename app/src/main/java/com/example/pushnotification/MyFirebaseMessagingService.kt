@@ -1,6 +1,7 @@
 package com.example.pushnotification
 
 import android.annotation.SuppressLint
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -13,13 +14,11 @@ import androidx.core.app.NotificationCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
-import java.util.*
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import java.lang.reflect.Type
 
 
 const val channelID = "notification_channel"
@@ -27,6 +26,7 @@ const val channelName = "com.example.pushnotification"
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
 
+    var notificationString = ""
     val arrayList = ArrayList<MessageData>()
     var value = 0
 
@@ -34,12 +34,15 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     var hashMap = HashMap<Int, ArrayList<MessageData>>()
 
+    lateinit var shrd: SharedPreferences
+    lateinit var editor: SharedPreferences.Editor
 
-    val shrd = getSharedPreferences("Message", MODE_PRIVATE)
-    val editor: SharedPreferences.Editor = shrd.edit()
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
+
+        shrd = getSharedPreferences("firebaseNotification", MODE_PRIVATE)
+        editor = shrd.edit()
 
         var messageData = MessageData(
             message.data["title"]!!,
@@ -61,26 +64,58 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     @SuppressLint("UnspecifiedImmutableFlag")
     private fun showNotification(messageData: MessageData) {
+        var oldNotificatinList = ArrayList<MessageData>()
+        val gson = Gson()
 
-//        if (hashMap.containsKey(messageData.id)) {
-//
-//            messageList.add(messageData.body)
-//            hashMap.put(messageData.id,messageList)
-//
-//        } else {
-//
-//            messageList.add(messageData.body)
-//            hashMap.put(messageData.id,messageList)
-//        }
+        var checkIsFirstTime = shrd.getBoolean("isFirstTime", true)
 
-        messageList.add(messageData)
-        hashMap.put(messageData.id,messageList)
+        if (checkIsFirstTime) {
+            editor.putBoolean("isFirstTime", false).apply()
+            var newHasMap = HashMap<Int, ArrayList<MessageData>>()
+            var newNotificationList = ArrayList<MessageData>()
+            newNotificationList.add(messageData)
+            newHasMap.put(messageData.id, newNotificationList)
 
-         editor.putString("notificationKey",ObjectMapper().writeValueAsString(hashMap))
-         editor.apply()
+            val hashMapString = gson.toJson(newHasMap)
+            // save in shared pref..
+            editor.putString("hasString", hashMapString).apply()
 
-        var hasmapString=shrd.getString("notificationKey","")
-     //   var notificationHasmap:HashMap<Int, ArrayList<MessageData>>=ObjectMapper().readValue(hasmapString, object : TypeReference<HashMap<Int, ArrayList<MessageData>>>() {})
+        } else {
+
+            val storedHasmapString = shrd.getString("hasString", "")
+
+            val type: Type = object : TypeToken<HashMap<Int, ArrayList<MessageData>>>() {}.type
+            val testHashMap2: HashMap<Int, ArrayList<MessageData>> =
+                gson.fromJson(storedHasmapString, type)
+
+            if (testHashMap2.containsKey(messageData.id)) {
+
+                oldNotificatinList = testHashMap2.get(messageData.id)!!
+                oldNotificatinList?.add(messageData)
+
+                testHashMap2.put(messageData.id, oldNotificatinList!!)
+
+                val testHashMapJson2 = gson.toJson(testHashMap2)
+                editor.putString("hasString", testHashMapJson2).apply()
+
+
+            } else {
+
+                var newHasMap = HashMap<Int, ArrayList<MessageData>>()
+                var newNotificationList = ArrayList<MessageData>()
+                newNotificationList.add(messageData)
+                newHasMap.put(messageData.id, newNotificationList)
+
+                val hashMapString = gson.toJson(newHasMap)
+
+                // save in shared pref..
+                editor.putString("hasString", hashMapString).apply()
+
+            }
+        }
+        // get from shared prefs
+
+        //   Log.d("getData", storedHasmapString.toString())
 
         val intent = Intent(this, MainActivity::class.java)
 
@@ -93,6 +128,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         arrayList.add(messageData)
 
+
         var builder: NotificationCompat.Builder =
             NotificationCompat.Builder(applicationContext, channelID)
                 .setSmallIcon(R.drawable.app_icon)
@@ -100,16 +136,19 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 .setOnlyAlertOnce(true)
                 .setGroup(messageData.id.toString())
                 .setContentText("${arrayList.size} new messages")
-                .setStyle(
-                    NotificationCompat.InboxStyle()
 
-                        .addLine(messageData.body)
 
-                        .setBigContentTitle(messageData.title)
-                        .setSummaryText("You have " + arrayList.size + " Notifications.")
-                )
-                .setGroupSummary(true)
-                .setContentIntent(pendingIntent)
+
+        val style = NotificationCompat.InboxStyle(builder)
+            .setBigContentTitle(messageData.title)
+            .setSummaryText("You have " + arrayList.size + " Notifications.")
+
+        for (notification in oldNotificatinList) {
+            style.addLine(notification.body)
+        }
+        builder.setStyle(style)
+        builder.setGroupSummary(true)
+            .setContentIntent(pendingIntent)
 
         val notificationManager =
             getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

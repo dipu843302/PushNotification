@@ -7,6 +7,7 @@ import android.content.*
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.os.Parcelable
 import android.util.Log
 import android.view.View
 import android.widget.Toast
@@ -18,25 +19,33 @@ import com.google.android.gms.tasks.OnCompleteListener
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.android.synthetic.main.activity_main.*
 
-
 class MainActivity : AppCompatActivity() {
     var TAG = "dipu"
+    var showMessage = ""
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val intent = intent
-        val messageData = intent.getParcelableExtra<MessageData>("message")
+        val extras = intent.extras
 
-        if (messageData != null) {
-            tvTitle.text = messageData.title
-            tvBody.text = messageData.body
-            Glide.with(imageView).load(messageData.image).into(imageView)
+        val messageList = extras?.getParcelableArrayList<MessageData>("message")
+        if (messageList != null) {
+            messageList.forEach {
+
+                showMessage+=(it.body + "\n")
+
+                tvTitle.text = it.title
+                Glide.with(imageView).load(it.image).into(imageView)
+            }
+            tvBody.text = showMessage
+        } else {
+          //  Toast.makeText(this, "Message not found", Toast.LENGTH_SHORT).show()
+
         }
+
 
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(receiver, IntentFilter("com.example.pushnotification_FCM-MESSAGE"))
-
 
 
         FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
@@ -47,10 +56,10 @@ class MainActivity : AppCompatActivity() {
 
             //      Get new FCM registration token
             val token = task.result
-            textView.setText(token)
+            //  textView.setText(token)
 
             Log.d(TAG, token.toString())
-            Toast.makeText(baseContext, token, Toast.LENGTH_SHORT).show()
+           // Toast.makeText(baseContext, token, Toast.LENGTH_SHORT).show()
         })
     }
 
@@ -74,9 +83,4 @@ class MainActivity : AppCompatActivity() {
         }
     }
 }
-
-
-
-
-
 

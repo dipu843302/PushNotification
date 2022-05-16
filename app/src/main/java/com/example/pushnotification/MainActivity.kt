@@ -42,12 +42,8 @@ class MainActivity : AppCompatActivity() {
           //  Toast.makeText(this, "Message not found", Toast.LENGTH_SHORT).show()
 
         }
-
-
         LocalBroadcastManager.getInstance(this)
             .registerReceiver(receiver, IntentFilter("com.example.pushnotification_FCM-MESSAGE"))
-
-
         FirebaseMessaging.getInstance().token.addOnCompleteListener(OnCompleteListener { task ->
             if (!task.isSuccessful) {
                 Log.w(TAG, "Fetching FCM registration token failed", task.exception)

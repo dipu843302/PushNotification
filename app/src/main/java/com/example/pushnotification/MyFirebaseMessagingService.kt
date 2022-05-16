@@ -8,6 +8,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.graphics.BitmapFactory
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -43,6 +44,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             message.data["image"] ?: "",
             message.data["id"]!!.toInt()
         )
+        Log.d("title", message.data["title"].toString())
         if (isAppOnForeground()) {
             val intent = Intent("com.example.pushnotification_FCM-MESSAGE")
             intent.putExtra("message", messageData)
@@ -52,7 +54,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         }
     }
 
-    @SuppressLint("UnspecifiedImmutableFlag")
+
     private fun showNotification(messageData: MessageData) {
         var oldNotificatinList = ArrayList<MessageData>()
         val gson = Gson()
@@ -102,10 +104,12 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
         val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
 
+        val largeIcon=BitmapFactory.decodeResource(resources,R.drawable.app_icon)
         //   arrayList.add(messageData)
         var builder: NotificationCompat.Builder =
             NotificationCompat.Builder(applicationContext, channelID)
                 .setSmallIcon(R.drawable.app_icon)
+                .setLargeIcon(largeIcon)
                 .setAutoCancel(true)
                 .setOnlyAlertOnce(true)
                 .setGroup(messageData.id.toString())
